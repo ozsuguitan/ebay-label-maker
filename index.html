@@ -3,7 +3,7 @@
 body{font-family:Helvetica,Arial,sans-serif;margin:0;display:flex;gap:20px;padding:16px;background:#eee}
 #form{width:360px;background:#fff;padding:12px;border-radius:6px}
 #form label{display:block;font-weight:bold;font-size:13px;margin-top:7px}
-#form input[type=text],#form textarea{width:100%;box-sizing:border-box;font-size:15px;padding:4px}
+#form select,#form input[type=date],#form input[type=text],#form textarea{width:100%;box-sizing:border-box;font-size:15px;padding:4px}
 .row{display:flex;gap:8px}.row>div{flex:1}
 #form .chk label{display:inline-block;font-weight:normal;margin-right:10px}
 button{font-size:15px;padding:6px 12px;margin-top:10px}
@@ -2320,12 +2320,14 @@ var qrcode = function() {
 
 </script></head><body>
 <div id="form">
-<label>ITEM ID</label><div class="row"><div><input type="text" id="id" placeholder="OZ-0042" style="font-size:20px"></div><button type="button" id="inc" style="margin-top:0">+1 ID</button></div>
+<label>ITEM ID (optional)</label><div class="row"><div><input type="text" id="id" placeholder="OZ-0042" style="font-size:20px"></div><button type="button" id="inc" style="margin-top:0">+1 ID</button></div>
+<div class="row"><div><label>Source</label><select id="src"><option>Amazon Vine</option><option>Best Buy</option><option>Thrift</option><option>Other</option></select></div><div><label>Date Acquired</label><input type="date" id="acq"></div></div>
+<label>Source detail / Order #</label><input type="text" id="srcd">
 <label>Condition</label><div class="chk">
 <label><input type="radio" name="cond" value="New">New</label><label><input type="radio" name="cond" value="Open Box (New)">Open Box (New)</label><label><input type="radio" name="cond" value="Used">Used</label><label><input type="radio" name="cond" value="For Parts">For Parts</label></div>
 <label>eBay Account</label><div class="chk"><label><input type="radio" name="acct" value="theozland" checked>theozland</label><label><input type="radio" name="acct" value="Heidi">Heidi</label></div>
 <div class="row"><div><label>Qty</label><input type="text" id="qty" placeholder="1"></div><div><label>Part # / Model #</label><input type="text" id="pn"></div></div>
-<div class="row"><div><label>Orig Cost $</label><input type="text" id="cost"></div><div><label>ETV $ (Vine)</label><input type="text" id="etv"></div><div><label>Min Accept $</label><input type="text" id="min"></div></div>
+<div class="row"><div id="costw"><label>Cost paid $</label><input type="text" id="cost"></div><div id="etvw"><label>ETV $ (Vine only)</label><input type="text" id="etv"></div><div><label>Min Accept $</label><input type="text" id="min"></div></div>
 <div class="row"><div><label>Box size</label><input type="text" id="box"></div><div class="chk"><label style="margin-top:28px"><input type="checkbox" id="own">Ships in own box</label></div></div>
 <div class="row"><div><label>Weight (lb/oz)</label><input type="text" id="wt"></div><div><label>Shelf / Bin</label><input type="text" id="shelf"></div></div>
 <label>Dims L x W x H (in)</label><input type="text" id="dims">
@@ -2338,21 +2340,22 @@ var qrcode = function() {
 <div class="bd"><table id="L_t"></table><div id="qr"></div></div><div class="notes" id="L_notes"></div></div></div>
 <script>
 qrcode.stringToBytes=qrcode.stringToBytesFuncs['UTF-8'];
-var T=['id','qty','pn','cost','etv','min','box','wt','dims','shelf','notes'],$=function(i){return document.getElementById(i)};
+function today(){var t=new Date();return new Date(t-t.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
+var T=['id','src','srcd','acq','qty','pn','cost','etv','min','box','wt','dims','shelf','notes'],$=function(i){return document.getElementById(i)};
 function radio(n){var r=document.querySelector('input[name='+n+']:checked');return r?r.value:''}
-function data(){var d={};T.forEach(function(k){d[k]=$(k).value.trim()});d.cond=radio('cond');d.acct=radio('acct')||'theozland';d.own=$('own').checked?1:0;d.stock=$('stock').checked?1:0;if(!d.qty)d.qty='1';
- return {id:d.id,cond:d.cond,acct:d.acct,qty:d.qty,pn:d.pn,cost:d.cost,etv:d.etv,min:d.min,box:d.box,own:d.own,wt:d.wt,dims:d.dims,shelf:d.shelf,stock:d.stock,notes:d.notes}}
+function data(){var d={};T.forEach(function(k){d[k]=$(k).value.trim()});d.cond=radio('cond');d.acct=radio('acct')||'theozland';d.own=$('own').checked?1:0;d.stock=$('stock').checked?1:0;if(!d.qty)d.qty='1';var vine=d.src=='Amazon Vine';$('etvw').style.display=vine?'':'none';if(!vine)d.etv='';
+ return {id:d.id,src:d.src,srcd:d.srcd,acq:d.acq,cond:d.cond,acct:d.acct,qty:d.qty,pn:d.pn,cost:d.cost,etv:d.etv,min:d.min,box:d.box,own:d.own,wt:d.wt,dims:d.dims,shelf:d.shelf,stock:d.stock,notes:d.notes}}
 function esc(s){return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
 function render(){var d=data();$('L_id').textContent=d.id||'\u00a0';
- var rows=[['COND',d.cond],['ACCT',d.acct],['QTY',d.qty],['PART#',d.pn],['COST $',d.cost],['ETV $',d.etv],['MIN $',d.min],['BOX',d.box+(d.own?' [OWN BOX]':'')],['WT',d.wt],['DIMS',d.dims],['SHELF',d.shelf],['STOCK OK',d.stock?'YES':'']];
+ var rows=[['SOURCE',d.src],['SRC DTL',d.srcd],['ACQ',d.acq],['COND',d.cond],['ACCT',d.acct],['QTY',d.qty],['PART#',d.pn],['COST $',d.cost],].concat(d.src=='Amazon Vine'?[['ETV $',d.etv]]:[]).concat([['MIN $',d.min],['BOX',d.box+(d.own?' [OWN BOX]':'')],['WT',d.wt],['DIMS',d.dims],['SHELF',d.shelf],['STOCK OK',d.stock?'YES':'']]);
  $('L_t').innerHTML=rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+esc(r[1])+'</td></tr>'}).join('');
  $('L_notes').textContent=d.notes?'NOTES: '+d.notes:'';
  var q=qrcode(0,'M');q.addData(JSON.stringify(d),'Byte');q.make();$('qr').innerHTML=q.createSvgTag({cellSize:4,margin:2,scalable:true});
  localStorage.setItem('ozLabel',JSON.stringify(d));window.lastJSON=JSON.stringify(d);}
-function load(){try{var d=JSON.parse(localStorage.getItem('ozLabel')||'null');if(!d)return;T.forEach(function(k){if(d[k]!=null)$(k).value=d[k]});if($('qty').value==='1')$('qty').value='';
+function load(){try{var d=JSON.parse(localStorage.getItem('ozLabel')||'null');if(!d)return;T.forEach(function(k){if(d[k]!=null)$(k).value=d[k]});if($('qty').value==='1')$('qty').value='';if(!$('src').value)$('src').value='Amazon Vine';
  ['cond','acct'].forEach(function(n){var r=document.querySelector('input[name='+n+'][value="'+d[n]+'"]');if(r)r.checked=true});$('own').checked=!!d.own;$('stock').checked=!!d.stock}catch(e){}}
 $('inc').onclick=function(){var v=$('id').value||'OZ-0000';var m=v.match(/^(.*?)(\d+)(\D*)$/);if(m){var n=String(parseInt(m[2],10)+1);while(n.length<m[2].length)n='0'+n;$('id').value=m[1]+n+m[3]}else $('id').value=v+'-1';render()};
 $('pr').onclick=function(){render();window.print()};
-$('clr').onclick=function(){T.forEach(function(k){if(k!='id')$(k).value=''});document.querySelectorAll('input[name=cond]').forEach(function(r){r.checked=false});$('own').checked=false;$('stock').checked=false;render()};
-document.addEventListener('input',render);document.addEventListener('change',render);load();render();
+$('clr').onclick=function(){T.forEach(function(k){if(k!='id'&&k!='src')$(k).value=''});$('acq').value=today();document.querySelectorAll('input[name=cond]').forEach(function(r){r.checked=false});$('own').checked=false;$('stock').checked=false;render()};
+document.addEventListener('input',render);document.addEventListener('change',render);load();if(!$('acq').value)$('acq').value=today();render();
 </script></body></html>
